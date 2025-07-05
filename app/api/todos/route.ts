@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 
 const ITEMS_PER_PAGE=10
-
+console.log("Loading app/api/todos/route.ts");
 export async function GET(req:NextRequest){
 const {userId}=await auth()
     if(!userId)return NextResponse.json({error:'Unauthorized'},{status:400});
@@ -11,7 +11,7 @@ const {userId}=await auth()
     const page=parseInt(searchParams.get('page')||'1')
     const search=searchParams.get('search')||""
     try {
-       const todos= await prisma.todo.findmany({
+       const todos= await prisma.toDo.findMany({
             where:{
                 userId,
                 title:{
@@ -22,7 +22,7 @@ const {userId}=await auth()
             take:ITEMS_PER_PAGE,
             skip:(page-1)*ITEMS_PER_PAGE
         })
-        const totalItems=await prisma.todo.count({
+        const totalItems=await prisma.toDo.count({
             where:{
                 userId,
                 title:{
@@ -48,6 +48,7 @@ const {userId}=await auth()
 
 export async function POST(req:NextRequest){
     const { userId } = await auth();
+    console.log(userId)
 
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -72,10 +73,10 @@ export async function POST(req:NextRequest){
       { status: 403 }
     );
   }
-
+   console.log('hit route')
   const { title } = await req.json();
 
-  const todo = await prisma.todo.create({
+  const todo = await prisma.toDo.create({
     data: { title, userId },
   });
 

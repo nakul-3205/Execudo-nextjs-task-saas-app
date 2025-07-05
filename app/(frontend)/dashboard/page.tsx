@@ -2,23 +2,44 @@
 
 import { useToast } from "@/hooks/use-toast";
 import { useCallback, useEffect, useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { TodoItem } from "@/components/TodoItem";
 import { TodoForm } from "@/components/TodoForm";
 import { ToDo } from "@/app/generated/prisma";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+  Alert,
+  AlertDescription
+} from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Pagination } from "@/components/Pagination";
 import Link from "next/link";
 import { useDebounceValue } from "usehooks-ts";
 import { motion } from "framer-motion";
+
+function Navbar() {
+  const { user } = useUser();
+  const { signOut } = useClerk();
+
+  return (
+    <nav className="w-full bg-white/10 backdrop-blur-md border-b border-white/20 py-4 px-6 flex items-center justify-between rounded-xl mb-8">
+      <h1 className="text-xl font-bold text-white">
+         Todo Dashboard
+      </h1>
+      <div className="flex items-center gap-4">
+        <span className="text-white/80 text-sm hidden sm:inline">
+          {user?.emailAddresses[0]?.emailAddress}
+        </span>
+        <button
+          onClick={() => signOut()}
+          className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition"
+        >
+          Sign Out
+        </button>
+      </div>
+    </nav>
+  );
+}
 
 export default function Dashboard() {
   const { user } = useUser();
@@ -27,14 +48,11 @@ export default function Dashboard() {
   const [todos, setTodos] = useState<ToDo[]>([]);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm] = useDebounceValue(searchTerm, 300);
 
-  // ----------------------- FETCH TODOS -----------------------
   const fetchTodos = useCallback(
     async (page: number) => {
       setIsLoading(true);
@@ -66,7 +84,6 @@ export default function Dashboard() {
     [debouncedSearchTerm, toast]
   );
 
-  // ----------------------- FETCH SUBSCRIPTION -----------------------
   const fetchSubscriptionStatus = async () => {
     const res = await fetch("/api/subscription");
     if (res.ok) {
@@ -76,11 +93,10 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchTodos(1);
+    fetchTodos(currentPage);
     fetchSubscriptionStatus();
   }, [fetchTodos]);
 
-  // ----------------------- HANDLERS -----------------------
   const handleAddTodo = async (title: string) => {
     toast({ title: "Adding Todo", description: "Please wait..." });
     try {
@@ -92,7 +108,8 @@ export default function Dashboard() {
 
       if (!res.ok) throw new Error("Failed to add todo");
 
-      await fetchTodos(currentPage);
+      await fetchTodos(1);
+      setCurrentPage(1);
       toast({ title: "Success", description: "Todo added." });
     } catch (error) {
       toast({
@@ -142,7 +159,6 @@ export default function Dashboard() {
     }
   };
 
-  // ----------------------- UI -----------------------
   return (
     <motion.div
       className="container mx-auto p-4 max-w-3xl mb-8"
@@ -150,11 +166,8 @@ export default function Dashboard() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <h1 className="text-4xl font-extrabold text-center text-white mb-8 bg-gradient-to-r from-purple-400 to-pink-600 text-transparent bg-clip-text">
-        Welcome, {user?.emailAddresses[0].emailAddress}!
-      </h1>
+      <Navbar />
 
-      {/* Add Todo Card */}
       <motion.div
         className="mb-8 bg-white/10 border border-white/20 rounded-xl shadow-lg p-6 backdrop-blur-md"
         whileHover={{ scale: 1.01 }}
@@ -163,7 +176,6 @@ export default function Dashboard() {
         <TodoForm onSubmit={handleAddTodo} />
       </motion.div>
 
-      {/* Alert if unsubscribed */}
       {!isSubscribed && todos.length >= 3 && (
         <Alert variant="destructive" className="mb-8">
           <AlertTriangle className="h-4 w-4" />
@@ -177,7 +189,6 @@ export default function Dashboard() {
         </Alert>
       )}
 
-      {/* Todo List */}
       <motion.div
         className="bg-white/10 border border-white/20 rounded-xl shadow-lg p-6 backdrop-blur-md"
         initial={{ opacity: 0, scale: 0.97 }}

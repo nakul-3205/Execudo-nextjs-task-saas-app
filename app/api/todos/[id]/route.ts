@@ -4,19 +4,18 @@ import prisma from "@/lib/prisma";
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   const { userId } = await auth();
-
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const { completed } = await req.json();
-    const todoId = params.id;
+    const todoId = context.params.id;
 
-    const todo = await prisma.todo.findUnique({
+    const todo = await prisma.toDo.findUnique({
       where: { id: todoId },
     });
 
@@ -28,34 +27,30 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const updatedTodo = await prisma.todo.update({
+    const updatedTodo = await prisma.toDo.update({
       where: { id: todoId },
       data: { completed },
     });
 
     return NextResponse.json(updatedTodo);
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   const { userId } = await auth();
-
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const todoId = params.id;
+    const todoId = context.params.id;
 
-    const todo = await prisma.todo.findUnique({
+    const todo = await prisma.toDo.findUnique({
       where: { id: todoId },
     });
 
@@ -67,15 +62,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    await prisma.todo.delete({
+    await prisma.toDo.delete({
       where: { id: todoId },
     });
 
     return NextResponse.json({ message: "Todo deleted successfully" });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
